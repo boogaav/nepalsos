@@ -1,0 +1,737 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="description" content="Interactive situation map of the 26 August 2026 Nepal flash flood — origin animation, downstream path, news feed, and district toll.">
+<meta property="og:title" content="Bhotekoshi Surge">
+<meta property="og:description" content="Interactive map of the 26 Aug 2026 Nepal flood: where it began, how it happened, where the water went.">
+<link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>🌊</text></svg>">
+<title>Bhotekoshi Surge</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Source+Serif+4:opsz,wght@8..60,600;8..60,700&family=Archivo:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500;600&display=swap">
+<style>
+  :root{
+    --ground:#ECEFE8;        /* cool topographic paper */
+    --panel:#F6F8F2;
+    --panel-2:#FFFFFF;
+    --ink:#16211C;
+    --muted:#5D6C63;
+    --faint:#8A978D;
+    --line:#D4DACD;
+    --terrain:#E2E7DA;
+    --terrain-2:#D8DECF;
+    --contour:#C6CFBD;
+    --water:#2E86A0;         /* river teal */
+    --water-soft:#BFDDE6;
+    --flood:#0E86B8;         /* flood accent */
+    --flood-glow:rgba(14,134,184,.35);
+    --glacier:#9CCBD8;
+    --alert:#C6431F;         /* semantic: casualties / destruction */
+    --alert-soft:rgba(198,67,31,.12);
+    --chip:#E7EBDF;
+    --shadow:0 10px 30px rgba(22,33,28,.12);
+  }
+  @media (prefers-color-scheme: dark){
+    :root:not([data-theme="light"]){
+      --ground:#0B110F;
+      --panel:#111A16;
+      --panel-2:#16211C;
+      --ink:#E7EEE6;
+      --muted:#93A399;
+      --faint:#63746A;
+      --line:#233029;
+      --terrain:#121B16;
+      --terrain-2:#17221C;
+      --contour:#1F2C25;
+      --water:#3FA8C4;
+      --water-soft:#173540;
+      --flood:#54C8EA;
+      --flood-glow:rgba(84,200,234,.28);
+      --glacier:#3E7C8C;
+      --alert:#FF6B47;
+      --alert-soft:rgba(255,107,71,.14);
+      --chip:#1B2620;
+      --shadow:0 10px 30px rgba(0,0,0,.45);
+    }
+  }
+  :root[data-theme="dark"]{
+    --ground:#0B110F;
+    --panel:#111A16;
+    --panel-2:#16211C;
+    --ink:#E7EEE6;
+    --muted:#93A399;
+    --faint:#63746A;
+    --line:#233029;
+    --terrain:#121B16;
+    --terrain-2:#17221C;
+    --contour:#1F2C25;
+    --water:#3FA8C4;
+    --water-soft:#173540;
+    --flood:#54C8EA;
+    --flood-glow:rgba(84,200,234,.28);
+    --glacier:#3E7C8C;
+    --alert:#FF6B47;
+    --alert-soft:rgba(255,107,71,.14);
+    --chip:#1B2620;
+    --shadow:0 10px 30px rgba(0,0,0,.45);
+  }
+  *{box-sizing:border-box}
+  html,body{margin:0;padding:0}
+  body{
+    background:var(--ground);
+    color:var(--ink);
+    font-family:"Archivo",system-ui,-apple-system,sans-serif;
+    line-height:1.5;
+    -webkit-font-smoothing:antialiased;
+  }
+  .wrap{max-width:1240px;margin:0 auto;padding:28px 20px 56px}
+
+  /* ---------- header ---------- */
+  .eyebrow{
+    font-family:"IBM Plex Mono",ui-monospace,monospace;
+    font-size:11px;letter-spacing:.18em;text-transform:uppercase;
+    color:var(--alert);font-weight:600;display:flex;align-items:center;gap:8px;
+  }
+  .eyebrow .dot{width:8px;height:8px;border-radius:50%;background:var(--alert);animation:blink 1.6s ease-in-out infinite}
+  @keyframes blink{0%,100%{opacity:1}50%{opacity:.25}}
+  h1{
+    font-family:"Source Serif 4",Georgia,serif;font-weight:700;
+    font-size:clamp(30px,4.6vw,50px);line-height:1.06;margin:10px 0 8px;
+    text-wrap:balance;letter-spacing:-.01em;
+  }
+  .standfirst{max-width:64ch;color:var(--muted);font-size:15.5px;margin:0 0 4px}
+  .dateline{
+    font-family:"IBM Plex Mono",ui-monospace,monospace;font-size:12px;color:var(--faint);
+    margin-top:10px;
+  }
+
+  /* ---------- stat strip ---------- */
+  .stats{
+    display:grid;grid-template-columns:repeat(4,1fr);gap:1px;
+    background:var(--line);border:1px solid var(--line);border-radius:10px;
+    overflow:hidden;margin:22px 0 26px;
+  }
+  .stat{background:var(--panel);padding:14px 16px}
+  .stat b{
+    display:block;font-family:"IBM Plex Mono",ui-monospace,monospace;
+    font-size:clamp(20px,2.4vw,27px);font-weight:600;font-variant-numeric:tabular-nums;
+  }
+  .stat.alert b{color:var(--alert)}
+  .stat span{font-size:11.5px;text-transform:uppercase;letter-spacing:.08em;color:var(--muted)}
+  .stat small{display:block;font-size:11px;color:var(--faint);margin-top:2px}
+
+  /* ---------- layout ---------- */
+  .grid{display:grid;grid-template-columns:minmax(0,1.55fr) minmax(300px,1fr);gap:22px;align-items:start}
+  @media (max-width:920px){.grid{grid-template-columns:1fr}}
+
+  .map-card{
+    background:var(--panel);border:1px solid var(--line);border-radius:12px;
+    overflow:hidden;box-shadow:var(--shadow);
+  }
+  .map-head{
+    display:flex;justify-content:space-between;align-items:baseline;gap:10px;
+    padding:14px 18px 10px;border-bottom:1px solid var(--line);
+  }
+  .map-head h2{font-family:"Source Serif 4",Georgia,serif;font-size:19px;margin:0;font-weight:700}
+  .map-head .note{font-family:"IBM Plex Mono",ui-monospace,monospace;font-size:10.5px;color:var(--faint)}
+  .map-box{position:relative;background:var(--terrain)}
+  svg{display:block;width:100%;height:auto}
+  text{font-family:"Archivo",sans-serif}
+  .svg-mono{font-family:"IBM Plex Mono",ui-monospace,monospace}
+
+  /* ---------- playback ---------- */
+  .playbar{padding:12px 16px 16px;border-top:1px solid var(--line);background:var(--panel)}
+  .play-row{display:flex;align-items:center;gap:12px}
+  button.play{
+    width:42px;height:42px;border-radius:50%;border:1px solid var(--line);
+    background:var(--flood);color:var(--ground);cursor:pointer;flex:none;
+    display:grid;place-items:center;font-size:15px;transition:transform .15s;
+  }
+  button.play:hover{transform:scale(1.06)}
+  button.play:focus-visible{outline:2px solid var(--ink);outline-offset:2px}
+  input[type=range]{
+    flex:1;appearance:none;-webkit-appearance:none;height:6px;border-radius:3px;
+    background:linear-gradient(to right,var(--flood) var(--fill,0%),var(--line) var(--fill,0%));
+    cursor:pointer;
+  }
+  input[type=range]::-webkit-slider-thumb{
+    -webkit-appearance:none;width:16px;height:16px;border-radius:50%;
+    background:var(--flood);border:2px solid var(--panel);box-shadow:0 1px 4px rgba(0,0,0,.3);
+  }
+  input[type=range]:focus-visible{outline:2px solid var(--ink);outline-offset:3px}
+  .clock{
+    font-family:"IBM Plex Mono",ui-monospace,monospace;font-size:13px;font-weight:600;
+    min-width:86px;text-align:right;font-variant-numeric:tabular-nums;color:var(--ink);
+  }
+  .caption{
+    margin-top:12px;padding:12px 14px;border-left:3px solid var(--flood);
+    background:var(--panel-2);border-radius:0 8px 8px 0;min-height:66px;
+  }
+  .caption b{font-family:"Source Serif 4",Georgia,serif;font-size:15px;display:block;margin-bottom:2px}
+  .caption p{margin:0;font-size:13.5px;color:var(--muted)}
+  .caption .t{
+    font-family:"IBM Plex Mono",ui-monospace,monospace;font-size:11px;color:var(--flood);
+    font-weight:600;letter-spacing:.06em;
+  }
+  .phases{display:flex;gap:6px;margin-top:12px;flex-wrap:wrap}
+  .phase-chip{
+    font-family:"IBM Plex Mono",ui-monospace,monospace;font-size:10.5px;padding:5px 9px;
+    border-radius:999px;border:1px solid var(--line);background:var(--chip);
+    color:var(--muted);cursor:pointer;transition:all .15s;
+  }
+  .phase-chip:hover{border-color:var(--flood)}
+  .phase-chip.active{background:var(--flood);color:var(--ground);border-color:var(--flood)}
+  .phase-chip:focus-visible{outline:2px solid var(--ink);outline-offset:2px}
+
+  /* ---------- popup ---------- */
+  .popup{
+    position:absolute;z-index:5;width:230px;background:var(--panel-2);
+    border:1px solid var(--line);border-radius:10px;padding:12px 14px;
+    box-shadow:var(--shadow);font-size:12.5px;pointer-events:none;
+    opacity:0;transform:translateY(4px);transition:opacity .18s,transform .18s;
+  }
+  .popup.show{opacity:1;transform:none;pointer-events:auto}
+  .popup b{font-family:"Source Serif 4",Georgia,serif;font-size:15px;display:block}
+  .popup .k{
+    font-family:"IBM Plex Mono",ui-monospace,monospace;font-size:10px;letter-spacing:.1em;
+    text-transform:uppercase;color:var(--alert);font-weight:600;
+  }
+  .popup p{margin:5px 0 0;color:var(--muted);line-height:1.45}
+
+  /* ---------- feed ---------- */
+  .rail{display:flex;flex-direction:column;gap:22px}
+  .feed-card,.how-card{
+    background:var(--panel);border:1px solid var(--line);border-radius:12px;overflow:hidden;
+  }
+  .rail-head{
+    padding:13px 16px;border-bottom:1px solid var(--line);
+    display:flex;align-items:center;justify-content:space-between;
+  }
+  .rail-head h2{font-family:"Source Serif 4",Georgia,serif;font-size:17px;margin:0;font-weight:700}
+  .live-tag{
+    font-family:"IBM Plex Mono",ui-monospace,monospace;font-size:10px;font-weight:600;
+    letter-spacing:.14em;color:var(--alert);display:flex;align-items:center;gap:6px;
+  }
+  .live-tag .dot{width:7px;height:7px;border-radius:50%;background:var(--alert);animation:blink 1.6s infinite}
+  .feed{max-height:640px;overflow-y:auto;scrollbar-width:thin}
+  .item{padding:13px 16px;border-bottom:1px solid var(--line);display:grid;grid-template-columns:62px 1fr;gap:12px}
+  .item:last-child{border-bottom:none}
+  .item .when{
+    font-family:"IBM Plex Mono",ui-monospace,monospace;font-size:11px;color:var(--faint);
+    font-weight:600;padding-top:2px;font-variant-numeric:tabular-nums;
+  }
+  .item h3{margin:0 0 3px;font-size:13.5px;font-weight:600;line-height:1.35}
+  .item p{margin:0;font-size:12.5px;color:var(--muted);line-height:1.45}
+  .item .src{
+    display:inline-block;margin-top:6px;font-family:"IBM Plex Mono",ui-monospace,monospace;
+    font-size:9.5px;letter-spacing:.08em;text-transform:uppercase;color:var(--faint);
+    border:1px solid var(--line);border-radius:4px;padding:2px 6px;
+  }
+  .item.major h3{color:var(--alert)}
+  .item.major .when{color:var(--alert)}
+
+  /* ---------- how it happened ---------- */
+  .how{padding:6px 0}
+  .step{display:grid;grid-template-columns:44px 1fr;gap:12px;padding:12px 16px;align-items:start}
+  .step + .step{border-top:1px dashed var(--line)}
+  .step .n{
+    width:34px;height:34px;border-radius:8px;background:var(--chip);border:1px solid var(--line);
+    display:grid;place-items:center;font-family:"IBM Plex Mono",ui-monospace,monospace;
+    font-size:13px;font-weight:600;color:var(--flood);
+  }
+  .step h3{margin:0 0 2px;font-size:13.5px;font-weight:600}
+  .step p{margin:0;font-size:12.5px;color:var(--muted);line-height:1.45}
+
+  /* ---------- district toll ---------- */
+  .toll{padding:10px 16px 16px}
+  .toll-row{display:grid;grid-template-columns:112px 1fr 30px;gap:10px;align-items:center;padding:4px 0}
+  .toll-row span{font-size:12px;color:var(--muted)}
+  .toll-row .bar{height:8px;border-radius:4px;background:var(--line);overflow:hidden}
+  .toll-row .bar i{display:block;height:100%;background:var(--alert);border-radius:4px}
+  .toll-row b{
+    font-family:"IBM Plex Mono",ui-monospace,monospace;font-size:12px;text-align:right;
+    font-variant-numeric:tabular-nums;
+  }
+  .toll-note{font-size:11px;color:var(--faint);margin:8px 0 0;padding:0 16px 4px}
+
+  footer{
+    margin-top:30px;padding-top:18px;border-top:1px solid var(--line);
+    font-size:12px;color:var(--faint);line-height:1.7;
+  }
+  footer a{color:var(--muted)}
+  @media (prefers-reduced-motion:reduce){
+    .eyebrow .dot,.live-tag .dot{animation:none}
+  }
+</style>
+</head>
+<body>
+
+<div class="wrap">
+  <header>
+    <div class="eyebrow"><span class="dot"></span>Situation map · Developing story</div>
+    <h1>A wall of water on the Bhotekoshi</h1>
+    <p class="standfirst">On the morning of 26 August, an earthquake shook the glaciers above Gyirong County, Tibet. Seven minutes later a flash flood — reportedly rising ~80&nbsp;m above river level — tore through the Nepal–China border at Rasuwagadhi and ran the length of the Trishuli river. This page maps where it began, how it unfolded, and where the water went.</p>
+    <div class="dateline">RASUWA DISTRICT, NEPAL · WED 26 AUG 2026 · TIMES IN NPT (UTC+5:45)</div>
+  </header>
+
+  <div class="stats">
+    <div class="stat alert"><b>157 <small style="display:inline;font-size:13px">+3</small></b><span>Confirmed dead</span><small>Nepal + Tibet, China</small></div>
+    <div class="stat alert"><b>600+</b><span>Residents missing</span><small>plus 265 in Gyirong, China</small></div>
+    <div class="stat"><b>403</b><span>Tourists unaccounted</span><small>341 of them foreign nationals</small></div>
+    <div class="stat"><b>430 MW</b><span>Power capacity lost</span><small>6 hydro / grid facilities hit</small></div>
+  </div>
+
+  <div class="grid">
+    <div class="map-card">
+      <div class="map-head">
+        <h2>The flood's path, Tibet → Chitwan</h2>
+        <span class="note">STYLIZED TERRAIN · NOT TO SCALE</span>
+      </div>
+      <div class="map-box" id="mapBox">
+        <svg id="map" viewBox="0 0 820 1100" role="img" aria-label="Stylized map of the Trishuli river corridor from the Gyirong glacier in Tibet to Chitwan, Nepal, showing the flood's path and affected settlements">
+          <rect x="0" y="0" width="820" height="1100" fill="var(--terrain)"/>
+          <g id="contours" opacity="0.9"></g>
+          <g id="rivers"></g>
+          <g id="borderline"></g>
+          <g id="labels"></g>
+          <g id="floodLayer"></g>
+          <g id="markers"></g>
+          <g id="origin"></g>
+        </svg>
+        <div class="popup" id="popup" role="dialog" aria-live="polite"></div>
+      </div>
+      <div class="playbar">
+        <div class="play-row">
+          <button class="play" id="playBtn" aria-label="Play flood animation">▶</button>
+          <input type="range" id="scrub" min="0" max="1000" value="0" aria-label="Flood timeline scrubber">
+          <div class="clock" id="clock">08:37</div>
+        </div>
+        <div class="caption" id="caption">
+          <span class="t" id="capTime">08:37 NPT</span>
+          <b id="capTitle">Earthquake under the Gyirong glaciers</b>
+          <p id="capBody">Press play to follow the flood from the glacier to the plains.</p>
+        </div>
+        <div class="phases" id="phaseChips"></div>
+      </div>
+    </div>
+
+    <div class="rail">
+      <div class="feed-card">
+        <div class="rail-head">
+          <h2>News feed</h2>
+          <span class="live-tag"><span class="dot"></span>AUG 26</span>
+        </div>
+        <div class="feed" id="feed"></div>
+      </div>
+
+      <div class="how-card">
+        <div class="rail-head"><h2>How it happened</h2></div>
+        <div class="how">
+          <div class="step"><div class="n">1</div><div><h3>An earthquake strikes the high Himalaya</h3><p>At 08:37 NPT a quake hits beneath Gyirong County, Tibet — the glaciated headwaters of the Lhende Khola, about 65&nbsp;km north of Kathmandu.</p></div></div>
+          <div class="step"><div class="n">2</div><div><h3>An ice-rock avalanche lets go</h3><p>A mass of ice and rock — reported ~600&nbsp;m wide — falls roughly 1,200&nbsp;m from the glacier into the narrow river gorge below.</p></div></div>
+          <div class="step"><div class="n">3</div><div><h3>The river is dammed, then bursts</h3><p>ICIMOD experts say the debris briefly blocked the Lhende Khola. Water pooled behind it, then broke through as a single surge.</p></div></div>
+          <div class="step"><div class="n">4</div><div><h3>The surge runs 100+ km downstream</h3><p>Seven minutes after the quake the wave hit Rasuwagadhi, then swept Timure and Syaphrubesi, wrecked six power facilities along the Trishuli, and pushed high water all the way to the Narayani in Chitwan.</p></div></div>
+        </div>
+      </div>
+
+      <div class="feed-card">
+        <div class="rail-head"><h2>District toll</h2></div>
+        <div class="toll" id="toll"></div>
+        <p class="toll-note">Breakdown from an earlier count of 72 confirmed deaths; totals have since risen and district figures are still being updated.</p>
+      </div>
+    </div>
+  </div>
+
+  <footer>
+    <b>About this page.</b> Figures are as reported on the evening of 26 Aug 2026 and will change; sources conflict while rescue is ongoing. The map is a stylized reconstruction — geography is simplified and downstream arrival times are approximate. Sources:
+    <a href="https://www.aljazeera.com/news/2026/8/26/at-least-eight-killed-in-nepal-flash-floods-that-swept-away-villages-roads">Al Jazeera</a> ·
+    <a href="https://www.cnn.com/2026/08/26/world/live-news/nepal-flash-flooding-floods-intl">CNN</a> ·
+    <a href="https://weather.com/2026/08/26/news/weather/nepal-flash-floods-avalanche-latest-information">weather.com</a> ·
+    <a href="https://en.wikipedia.org/wiki/2026_Nepal_floods">Wikipedia</a> ·
+    <a href="https://www.unicefusa.org/stories/deadly-flash-flooding-hits-nepal">UNICEF</a>
+  </footer>
+</div>
+
+<script>
+(function(){
+  const svgNS = "http://www.w3.org/2000/svg";
+  const $ = id => document.getElementById(id);
+  const reduceMotion = matchMedia("(prefers-reduced-motion: reduce)").matches;
+
+  /* ---------- seeded PRNG for stable terrain ---------- */
+  let seed = 20260826;
+  function rnd(){ seed = (seed*1103515245 + 12345) % 2147483648; return seed/2147483648; }
+
+  /* ---------- terrain contours: two massifs + valley shading ---------- */
+  const contours = $("contours");
+  function blob(cx, cy, rx, ry, wob, rot){
+    const n = 26; let d = "";
+    for(let i=0;i<=n;i++){
+      const a = (i/n)*Math.PI*2 + rot;
+      const w = 1 + (Math.sin(a*3+cx)+Math.sin(a*5+cy))*wob;
+      const x = cx + Math.cos(a)*rx*w, y = cy + Math.sin(a)*ry*w;
+      d += (i ? "L" : "M") + x.toFixed(1) + " " + y.toFixed(1) + " ";
+    }
+    return d + "Z";
+  }
+  function massif(cx, cy, baseRx, baseRy, rings, rot){
+    for(let i=rings;i>=1;i--){
+      const p = document.createElementNS(svgNS,"path");
+      const k = i/rings;
+      p.setAttribute("d", blob(cx + (rnd()-0.5)*14*(1-k), cy + (rnd()-0.5)*14*(1-k), baseRx*k, baseRy*k, 0.06, rot));
+      p.setAttribute("fill", i%2 ? "var(--terrain-2)" : "var(--terrain)");
+      p.setAttribute("stroke", "var(--contour)");
+      p.setAttribute("stroke-width", "1");
+      contours.appendChild(p);
+    }
+  }
+  massif(660, 330, 210, 150, 7, 0.4);   // Langtang Himal (east of valley)
+  massif(160, 380, 190, 160, 7, 2.1);   // Ganesh Himal (west)
+  massif(560, 60,  240, 110, 5, 1.2);   // Tibetan plateau edge
+  massif(90, 800, 150, 120, 5, 0.9);    // Gorkha hills
+  massif(600, 820, 200, 130, 6, 2.8);   // Nuwakot/Kathmandu rim hills
+  massif(420, 1060, 260, 90, 4, 0.2);   // Chitwan inner terai ridge
+
+  /* ---------- rivers ---------- */
+  const rivers = $("rivers");
+  const MAIN_D = "M470 84 C468 130 466 180 472 232 C476 268 476 288 474 306 " +
+    "C472 330 468 352 462 380 C456 410 452 428 450 448 " +
+    "C446 486 436 520 428 556 C420 592 416 628 412 664 " +
+    "C408 696 400 716 392 736 C384 758 376 776 372 796 " +
+    "C364 826 346 842 326 856 C296 878 268 892 250 906 " +
+    "C216 932 186 966 168 1006 C160 1030 166 1058 174 1088";
+  function riverPath(d, w, dash){
+    const p = document.createElementNS(svgNS,"path");
+    p.setAttribute("d", d); p.setAttribute("fill","none");
+    p.setAttribute("stroke","var(--water)"); p.setAttribute("stroke-width",w);
+    p.setAttribute("stroke-linecap","round");
+    if(dash) p.setAttribute("stroke-dasharray",dash);
+    rivers.appendChild(p); return p;
+  }
+  // soft under-glow of the valley floor
+  const glow = document.createElementNS(svgNS,"path");
+  glow.setAttribute("d", MAIN_D); glow.setAttribute("fill","none");
+  glow.setAttribute("stroke","var(--water-soft)"); glow.setAttribute("stroke-width","16");
+  glow.setAttribute("stroke-linecap","round"); glow.setAttribute("opacity","0.55");
+  rivers.appendChild(glow);
+  const mainRiver = riverPath(MAIN_D, 3.5);
+  // tributaries
+  riverPath("M332 372 C368 396 414 428 450 452", 2);                       // Chilime khola
+  riverPath("M646 452 C580 452 510 452 452 452", 2);                       // Langtang khola
+  riverPath("M40 930 C86 958 130 982 166 1010", 2.5);                      // Kali Gandaki → Devghat
+  riverPath("M712 812 C640 806 560 800 374 794", 1.6);                     // Tadi/other
+
+  /* ---------- border ---------- */
+  const border = document.createElementNS(svgNS,"path");
+  border.setAttribute("d","M20 268 C160 300 320 282 470 302 C610 320 720 296 800 312");
+  border.setAttribute("fill","none"); border.setAttribute("stroke","var(--faint)");
+  border.setAttribute("stroke-width","1.6"); border.setAttribute("stroke-dasharray","8 6");
+  $("borderline").appendChild(border);
+
+  /* ---------- static labels ---------- */
+  const labels = $("labels");
+  function label(x,y,txt,opts={}){
+    const t = document.createElementNS(svgNS,"text");
+    t.setAttribute("x",x); t.setAttribute("y",y);
+    t.setAttribute("fill", opts.color || "var(--faint)");
+    t.setAttribute("font-size", opts.size || 13);
+    if(opts.mono){ t.setAttribute("class","svg-mono"); t.setAttribute("letter-spacing","0.22em"); }
+    if(opts.weight) t.setAttribute("font-weight",opts.weight);
+    if(opts.anchor) t.setAttribute("text-anchor",opts.anchor);
+    if(opts.italic) t.setAttribute("font-style","italic");
+    t.textContent = txt; labels.appendChild(t); return t;
+  }
+  label(70, 120, "TIBET (CHINA)", {mono:true, size:13, weight:600});
+  label(70, 142, "GYIRONG COUNTY · 3 DEAD, 265 MISSING", {mono:true, size:8.5});
+  label(60, 372, "NEPAL", {mono:true, size:13, weight:600});
+  label(560, 250, "Gyirong Port", {size:11, italic:true});
+  label(556, 264, "trade gateway, mudslide-hit", {size:9});
+  label(640, 400, "LANGTANG HIMAL", {mono:true, size:9.5, anchor:"middle"});
+  label(150, 460, "GANESH HIMAL", {mono:true, size:9.5, anchor:"middle"});
+  label(535, 505, "RASUWA", {mono:true, size:10.5});
+  label(505, 660, "NUWAKOT", {mono:true, size:10.5});
+  label(230, 780, "DHADING", {mono:true, size:10.5});
+  label(66, 700, "GORKHA", {mono:true, size:10.5});
+  label(60, 1005, "TANAHU", {mono:true, size:10.5});
+  label(330, 1002, "CHITWAN", {mono:true, size:10.5});
+  label(505, 745, "Trishuli River", {size:11, italic:true, color:"var(--water)"});
+  label(497, 415, "Bhotekoshi", {size:11, italic:true, color:"var(--water)"});
+  label(485, 175, "Lhende Khola", {size:11, italic:true, color:"var(--water)"});
+  label(215, 1075, "Narayani River →", {size:11, italic:true, color:"var(--water)"});
+  label(770, 1075, "N ↑", {mono:true, size:12, anchor:"end", weight:600});
+  label(646, 445, "Langtang Khola", {size:9, italic:true, color:"var(--water)", anchor:"end"});
+  // Kathmandu reference
+  const kat = document.createElementNS(svgNS,"circle");
+  kat.setAttribute("cx",700); kat.setAttribute("cy",905); kat.setAttribute("r",5);
+  kat.setAttribute("fill","none"); kat.setAttribute("stroke","var(--faint)"); kat.setAttribute("stroke-width","1.5");
+  labels.appendChild(kat);
+  label(712, 909, "Kathmandu", {size:10.5, color:"var(--muted)"});
+
+  /* ---------- places along the river ---------- */
+  const L = mainRiver.getTotalLength();
+  function tNear(x,y){
+    let best=0, bd=1e9;
+    for(let i=0;i<=600;i++){
+      const p = mainRiver.getPointAtLength(L*i/600);
+      const d = (p.x-x)**2 + (p.y-y)**2;
+      if(d<bd){bd=d;best=i/600;}
+    }
+    return best;
+  }
+  const PLACES = [
+    {name:"Glacier origin", x:470, y:84, kind:"origin", k:"Source of the flood",
+     info:"An earthquake-triggered ice-rock avalanche ~600 m wide fell ~1,200 m from a glacier here, damming the Lhende Khola before it burst."},
+    {name:"Rasuwagadhi", x:474, y:306, kind:"town", k:"Border crossing destroyed",
+     info:"Nepal–China border point and dry port. The customs office was destroyed 7 minutes after the quake. The 111 MW Rasuwagadhi hydropower plant was damaged; 8 South Korean workers missing."},
+    {name:"Timure", x:471, y:338, kind:"town", k:"Village swept away",
+     info:"Border village overwhelmed by the surge. Nine Armed Police Force personnel stationed here are among the missing."},
+    {name:"Syaphrubesi", x:450, y:450, kind:"town", k:"Trekking gateway hit",
+     info:"Main gateway to Langtang National Park, busy with tourists in late August. Hundreds of trekkers were in the valley; 403 tourists are unaccounted for across the region."},
+    {name:"Mailung", x:428, y:556, kind:"town", k:"Hydro corridor",
+     info:"Settlement in the steep Trishuli gorge near the 60 MW Trishuli 3A project, one of six damaged power facilities."},
+    {name:"Betrawati", x:412, y:664, kind:"town", k:"Bridge town",
+     info:"Rasuwa–Nuwakot boundary town. High water severed road links; the Trishuli 3B hub 220 kV substation nearby was knocked out."},
+    {name:"Trishuli Bazaar", x:392, y:736, kind:"town", k:"Bridge swept away",
+     info:"District bazaar of Nuwakot. A bridge connecting the town was swept away; the historic Trishuli and Devighat power stations downstream were both damaged. 11 dead in Nuwakot."},
+    {name:"Galchhi / Dhading", x:326, y:856, kind:"town", k:"18 dead in Dhading",
+     info:"The swollen Trishuli runs along the Prithvi Highway corridor here. Dhading district reported 18 deaths as the wave passed through late morning."},
+    {name:"Devghat", x:168, y:1006, kind:"town", k:"Rivers converge",
+     info:"Confluence where the Trishuli meets the Kali Gandaki to form the Narayani. The flood crest arrived in the afternoon, spreading into the plains."},
+    {name:"Narayanghat / Chitwan", x:174, y:1088, kind:"town", k:"28 dead in Chitwan",
+     info:"Chitwan recorded the highest district toll — 28 dead — as the Narayani burst across low-lying settlements. Downstream, the river becomes India's Gandak."}
+  ];
+  PLACES.forEach(p => p.t = p.kind==="origin" ? 0 : tNear(p.x,p.y));
+
+  /* hydropower glyphs (static) */
+  const HYDRO = [[482,318],[344,368],[437,540],[425,676],[398,752],[362,800]];
+  const markersG = $("markers");
+  HYDRO.forEach(([x,y])=>{
+    const g = document.createElementNS(svgNS,"g");
+    g.innerHTML = '<rect x="'+(x-5)+'" y="'+(y-5)+'" width="10" height="10" rx="2" fill="var(--chip)" stroke="var(--faint)" stroke-width="1"/>' +
+      '<path d="M'+x+' '+(y-3)+' l-2.5 3.5 h2 l-1.5 3 l4 -4 h-2 z" fill="var(--alert)"/>';
+    markersG.appendChild(g);
+  });
+  label(315, 355, "⚡ = hydropower plant damaged", {size:9, color:"var(--faint)"});
+
+  /* ---------- place markers ---------- */
+  const popup = $("popup"), mapBox = $("mapBox");
+  PLACES.forEach((p,i)=>{
+    const g = document.createElementNS(svgNS,"g");
+    g.setAttribute("tabindex","0"); g.setAttribute("role","button");
+    g.setAttribute("aria-label", p.name + ": " + p.k);
+    g.style.cursor = "pointer";
+    const halo = document.createElementNS(svgNS,"circle");
+    halo.setAttribute("cx",p.x); halo.setAttribute("cy",p.y); halo.setAttribute("r",11);
+    halo.setAttribute("fill","transparent");
+    const c = document.createElementNS(svgNS,"circle");
+    c.setAttribute("cx",p.x); c.setAttribute("cy",p.y); c.setAttribute("r", p.kind==="origin"?7:5.5);
+    c.setAttribute("fill", p.kind==="origin" ? "var(--glacier)" : "var(--panel-2)");
+    c.setAttribute("stroke","var(--muted)"); c.setAttribute("stroke-width","2");
+    p.dot = c;
+    const t = document.createElementNS(svgNS,"text");
+    const left = ["Mailung","Betrawati","Trishuli Bazaar","Galchhi / Dhading","Devghat","Narayanghat / Chitwan","Syaphrubesi"].includes(p.name);
+    t.setAttribute("x", left ? p.x-12 : p.x+12);
+    t.setAttribute("y", p.y+4);
+    t.setAttribute("text-anchor", left ? "end":"start");
+    t.setAttribute("font-size","12"); t.setAttribute("font-weight","600");
+    t.setAttribute("fill","var(--ink)");
+    t.textContent = p.name;
+    g.appendChild(halo); g.appendChild(c); g.appendChild(t);
+    markersG.appendChild(g);
+    const show = ()=>{
+      popup.innerHTML = '<span class="k">'+p.k+'</span><b>'+p.name+'</b><p>'+p.info+'</p>';
+      const bx = mapBox.getBoundingClientRect();
+      let px = p.x/820*bx.width, py = p.y/1100*bx.height;
+      px = Math.min(Math.max(px+14, 8), bx.width-238);
+      py = Math.min(Math.max(py-30, 8), bx.height-150);
+      popup.style.left = px+"px"; popup.style.top = py+"px";
+      popup.classList.add("show");
+    };
+    g.addEventListener("click", e=>{e.stopPropagation(); show();});
+    g.addEventListener("keydown", e=>{ if(e.key==="Enter"||e.key===" "){e.preventDefault(); show();}});
+  });
+  mapBox.addEventListener("click", ()=>popup.classList.remove("show"));
+
+  /* ---------- origin burst ---------- */
+  const originG = $("origin");
+  originG.innerHTML =
+    '<circle id="quakeRing" cx="470" cy="84" r="10" fill="none" stroke="var(--alert)" stroke-width="2" opacity="0"/>' +
+    '<circle id="quakeRing2" cx="470" cy="84" r="10" fill="none" stroke="var(--alert)" stroke-width="1.5" opacity="0"/>' +
+    '<path d="M446 60 L470 84 L462 52 L478 78 L494 58 L482 86" fill="none" stroke="var(--glacier)" stroke-width="3" stroke-linecap="round" opacity="0.9"/>';
+
+  /* ---------- flood layer ---------- */
+  const floodLayer = $("floodLayer");
+  const floodPath = document.createElementNS(svgNS,"path");
+  floodPath.setAttribute("d", MAIN_D); floodPath.setAttribute("fill","none");
+  floodPath.setAttribute("stroke","var(--flood)"); floodPath.setAttribute("stroke-width","7");
+  floodPath.setAttribute("stroke-linecap","round");
+  floodPath.setAttribute("stroke-dasharray", L+" "+L);
+  floodPath.setAttribute("stroke-dashoffset", L);
+  const floodHalo = floodPath.cloneNode();
+  floodHalo.setAttribute("stroke-width","15");
+  floodHalo.setAttribute("stroke","var(--flood-glow)");
+  floodLayer.appendChild(floodHalo); floodLayer.appendChild(floodPath);
+  const head = document.createElementNS(svgNS,"circle");
+  head.setAttribute("r","9"); head.setAttribute("fill","var(--flood)");
+  head.setAttribute("opacity","0");
+  const headRing = document.createElementNS(svgNS,"circle");
+  headRing.setAttribute("r","14"); headRing.setAttribute("fill","none");
+  headRing.setAttribute("stroke","var(--flood)"); headRing.setAttribute("stroke-width","2");
+  headRing.setAttribute("opacity","0");
+  floodLayer.appendChild(headRing); floodLayer.appendChild(head);
+
+  /* ---------- phases ---------- */
+  const tOf = name => (PLACES.find(p=>p.name===name)||{t:0}).t;
+  const PHASES = [
+    {p:0.0,  time:"08:37", label:"Quake",
+     title:"Earthquake under the Gyirong glaciers",
+     body:"A quake strikes beneath Gyirong County, Tibet. High above the Lhende Khola, a glacier front is shaken loose."},
+    {p:0.02, time:"08:38", label:"Avalanche",
+     title:"Ice-rock avalanche dams the river",
+     body:"A mass of ice and rock ~600 m wide falls ~1,200 m into the gorge, briefly damming the Lhende Khola. Water piles up behind the debris — then breaks through."},
+    {p:tOf("Rasuwagadhi"), time:"08:44", label:"Border",
+     title:"The surge hits Rasuwagadhi",
+     body:"Seven minutes after the quake, a wall of water — reportedly ~80 m above river level — obliterates the border customs post and slams the 111 MW Rasuwagadhi plant. Mudslides cut off Gyirong Port on the Chinese side."},
+    {p:tOf("Syaphrubesi"), time:"~09:05", label:"Syaphrubesi",
+     title:"Timure and Syaphrubesi swept away",
+     body:"The flood swallows Timure — nine APF personnel missing — and tears through Syaphrubesi, the crowded trekking gateway to Langtang. Hundreds of tourists are caught in the valley."},
+    {p:tOf("Betrawati"), time:"~10:30", label:"Gorge",
+     title:"Six power facilities fail in the gorge",
+     body:"Down the Trishuli gorge the wave wrecks Chilime, Trishuli 3A, the 3B hub substation, and the Trishuli and Devighat stations — about 430 MW of capacity lost. Bridges at Betrawati and Trishuli Bazaar go with it."},
+    {p:tOf("Galchhi / Dhading"), time:"~12:00", label:"Dhading",
+     title:"High water races along the Prithvi corridor",
+     body:"The crest pushes through Dhading (18 dead) and past Galchhi. Authorities warn every district on the Trishuli and Narayani to keep clear of the banks."},
+    {p:tOf("Devghat"), time:"~15:00", label:"Narayani",
+     title:"The flood spreads into the plains",
+     body:"At Devghat the Trishuli joins the Kali Gandaki to become the Narayani. Chitwan takes the worst district toll — 28 dead — before the river carries the floodwater on toward India as the Gandak."},
+    {p:1.0, time:"Evening", label:"Aftermath",
+     title:"157 dead, hundreds still missing",
+     body:"By late Wednesday police had recovered 157 bodies; 600+ residents and 403 tourists remain unaccounted for. Army, APF and police helicopters continue search and rescue — 88 people pulled out so far."}
+  ];
+
+  const chipsBox = $("phaseChips");
+  PHASES.forEach((ph,i)=>{
+    const b = document.createElement("button");
+    b.className = "phase-chip"; b.textContent = ph.time+" "+ph.label;
+    b.addEventListener("click", ()=>{ pause(); setProgress(ph.p + 0.0001); });
+    chipsBox.appendChild(b); ph.chip = b;
+  });
+
+  /* ---------- playback ---------- */
+  const scrub = $("scrub"), clock = $("clock"), playBtn = $("playBtn");
+  const capT = $("capTime"), capTitle = $("capTitle"), capBody = $("capBody");
+  let prog = 0, playing = false, raf = null, lastTs = null;
+  const DURATION = 28000; // ms for full run
+
+  function fmtClock(p){
+    // 08:37 -> ~15:00 mapped non-linearly by phases for display
+    let ph = PHASES[0];
+    for(const q of PHASES) if(p >= q.p) ph = q;
+    return ph.time.replace("~","");
+  }
+  function setProgress(p){
+    prog = Math.min(1, Math.max(0, p));
+    scrub.value = Math.round(prog*1000);
+    scrub.style.setProperty("--fill", (prog*100)+"%");
+    floodPath.setAttribute("stroke-dashoffset", L*(1-prog));
+    floodHalo.setAttribute("stroke-dashoffset", L*(1-prog));
+    const pt = mainRiver.getPointAtLength(L*prog);
+    head.setAttribute("cx",pt.x); head.setAttribute("cy",pt.y);
+    headRing.setAttribute("cx",pt.x); headRing.setAttribute("cy",pt.y);
+    const active = prog>0.001 && prog<0.999;
+    head.setAttribute("opacity", active?1:0);
+    headRing.setAttribute("opacity", active?0.6:0);
+    // quake rings
+    const q1 = $("quakeRing"), q2 = $("quakeRing2");
+    if(prog>0 && prog<0.10){
+      const k = prog/0.10;
+      q1.setAttribute("r", 10+k*38); q1.setAttribute("opacity", (1-k)*0.9);
+      q2.setAttribute("r", 10+k*22); q2.setAttribute("opacity", (1-k)*0.7);
+    } else { q1.setAttribute("opacity",0); q2.setAttribute("opacity",0); }
+    // markers hit
+    PLACES.forEach(pl=>{
+      const hit = prog >= pl.t - 0.002 && prog > 0;
+      if(pl.kind!=="origin"){
+        pl.dot.setAttribute("fill", hit ? "var(--alert)" : "var(--panel-2)");
+        pl.dot.setAttribute("stroke", hit ? "var(--alert)" : "var(--muted)");
+      } else {
+        pl.dot.setAttribute("stroke", prog>0 ? "var(--alert)" : "var(--muted)");
+      }
+    });
+    // caption + chips
+    let ph = PHASES[0];
+    PHASES.forEach(q=>{ if(prog >= q.p) ph = q; });
+    PHASES.forEach(q=> q.chip.classList.toggle("active", q===ph));
+    capT.textContent = ph.time + " NPT";
+    capTitle.textContent = ph.title;
+    capBody.textContent = ph.body;
+    clock.textContent = fmtClock(prog);
+  }
+  function tick(ts){
+    if(!playing) return;
+    if(lastTs==null) lastTs = ts;
+    const dt = ts - lastTs; lastTs = ts;
+    setProgress(prog + dt/DURATION);
+    if(prog >= 1){ pause(); return; }
+    raf = requestAnimationFrame(tick);
+  }
+  function play(){
+    if(prog>=1) setProgress(0);
+    playing = true; lastTs = null;
+    playBtn.textContent = "❚❚"; playBtn.setAttribute("aria-label","Pause");
+    raf = requestAnimationFrame(tick);
+  }
+  function pause(){
+    playing = false; if(raf) cancelAnimationFrame(raf);
+    playBtn.textContent = "▶"; playBtn.setAttribute("aria-label","Play flood animation");
+  }
+  playBtn.addEventListener("click", ()=> playing ? pause() : play());
+  scrub.addEventListener("input", ()=>{ pause(); setProgress(scrub.value/1000); });
+  setProgress(0);
+  if(!reduceMotion) setTimeout(play, 900);
+
+  /* ---------- news feed ---------- */
+  const FEED = [
+    {t:"08:37", major:false, h:"Earthquake strikes beneath Gyirong County, Tibet",
+     p:"A quake hits the glaciated headwaters of the Lhende Khola, about 65 km north of Kathmandu. Nepal's foreign minister later says initial assessments show it triggered an avalanche.", s:"Wikipedia / Govt of Nepal"},
+    {t:"08:44", major:true, h:"Flash flood obliterates Rasuwagadhi border crossing",
+     p:"Seven minutes after the quake, a surge reported at ~80 m above river level destroys the customs office at the Nepal–China border and hits the Rasuwagadhi hydropower plant.", s:"Wikipedia"},
+    {t:"Morning", major:false, h:"First reports: at least 8 dead, villages swept away",
+     p:"Early counts from Rasuwa put the toll at eight, with entire settlements at Timure and Syaphrubesi gone. Population of the affected corridor is roughly 50,000.", s:"Al Jazeera"},
+    {t:"Morning", major:false, h:"China: mudslide cuts off Gyirong Port",
+     p:"Roads, communications and power are severed in the Shigatse region. Beijing later reports 3 dead and 265 missing in Gyirong county. Xi Jinping urges 'all-out' search efforts.", s:"Al Jazeera"},
+    {t:"Midday", major:false, h:"Six power facilities down, 430 MW lost",
+     p:"Nepal Electricity Authority lists damage at Rasuwagadhi, Chilime, Trishuli 3A, the Trishuli 3B hub substation, Trishuli and Devighat stations. Eight South Korean plant workers are missing, ten stranded.", s:"Al Jazeera / NEA"},
+    {t:"Afternoon", major:true, h:"Toll climbs to 72 as the flood runs downstream",
+     p:"Deaths are confirmed far below the origin: 28 in Chitwan, 18 in Dhading, 11 in Nuwakot, 9 in Gorkha, 4 in Tanahu, plus Rasuwa and Nawalparasi East. Residents are warned off the Bhotekoshi, Trishuli and Narayani.", s:"weather.com"},
+    {t:"Afternoon", major:false, h:"ICIMOD: an ice-rock avalanche dammed the river",
+     p:"Climate scientists in Kathmandu say a glacier avalanche most likely blocked the channel, and the impounded water burst through as a single catastrophic surge — a hazard growing as the Himalaya warms.", s:"CNN / ICIMOD"},
+    {t:"Evening", major:false, h:"PM Shah: 'The government takes full responsibility for your rescue'",
+     p:"Nepal mobilises the Army, Armed Police Force and Police with helicopters and medical teams. At least 88 people have been rescued; 28 police personnel are themselves missing.", s:"Al Jazeera"},
+    {t:"Evening", major:true, h:"157 bodies recovered; 400+ missing, many of them tourists",
+     p:"Police say 157 bodies have been recovered in Nepal. Some 403 tourists — 341 foreigners, including 142 Indians and nationals of the US, UK, Australia, South Korea and more — are unaccounted for, along with 600+ residents.", s:"Al Jazeera / Nepal Police"},
+    {t:"Night", major:false, h:"Search continues into the night",
+     p:"Rescue flights work the gorge between Rasuwagadhi and Betrawati. Figures remain provisional and are expected to change as access improves.", s:"CNN"}
+  ];
+  const feedBox = $("feed");
+  FEED.forEach(f=>{
+    const d = document.createElement("div");
+    d.className = "item" + (f.major?" major":"");
+    d.innerHTML = '<div class="when">'+f.t+'</div><div><h3>'+f.h+'</h3><p>'+f.p+'</p><span class="src">'+f.s+'</span></div>';
+    feedBox.appendChild(d);
+  });
+
+  /* ---------- district toll ---------- */
+  const TOLL = [["Chitwan",28],["Dhading",18],["Nuwakot",11],["Gorkha",9],["Tanahu",4],["Rasuwa",1],["Nawalparasi E.",1]];
+  const tollBox = $("toll");
+  TOLL.forEach(([n,v])=>{
+    const r = document.createElement("div");
+    r.className = "toll-row";
+    r.innerHTML = '<span>'+n+'</span><div class="bar"><i style="width:'+(v/28*100)+'%"></i></div><b>'+v+'</b>';
+    tollBox.appendChild(r);
+  });
+})();
+</script>
+</body>
+</html>

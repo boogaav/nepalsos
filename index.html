@@ -186,18 +186,39 @@
 
   /* ---------- popup ---------- */
   .popup{
-    position:absolute;z-index:5;width:230px;background:var(--panel-2);
+    position:absolute;z-index:5;width:min(300px, calc(100vw - 48px));background:var(--panel-2);
     border:1px solid var(--line);border-radius:10px;padding:12px 14px;
     box-shadow:var(--shadow);font-size:12.5px;pointer-events:none;
     opacity:0;transform:translateY(4px);transition:opacity .18s,transform .18s;
   }
   .popup.show{opacity:1;transform:none;pointer-events:auto}
-  .popup b{font-family:"Source Serif 4",Georgia,serif;font-size:15px;display:block}
+  .popup b{font-family:"Source Serif 4",Georgia,serif;font-size:15px;display:block;padding-right:20px}
   .popup .k{
     font-family:"IBM Plex Mono",ui-monospace,monospace;font-size:10px;letter-spacing:.1em;
     text-transform:uppercase;color:var(--alert);font-weight:600;
   }
   .popup p{margin:5px 0 0;color:var(--muted);line-height:1.45}
+  .popup iframe{
+    display:block;width:100%;height:150px;border:0;border-radius:6px;
+    margin-top:9px;background:var(--chip);
+  }
+  .popup .pclose{
+    position:absolute;top:6px;right:6px;width:24px;height:24px;border:none;
+    border-radius:6px;background:transparent;color:var(--muted);font-size:16px;
+    line-height:1;cursor:pointer;
+  }
+  .popup .pclose:hover{background:var(--chip);color:var(--ink)}
+  .popup .pclose:focus-visible{outline:2px solid var(--ink)}
+  .popup .plinks{display:flex;gap:12px;margin-top:8px}
+  .popup .plinks a{
+    font-family:"IBM Plex Mono",ui-monospace,monospace;font-size:10.5px;
+    color:var(--flood);text-decoration:none;font-weight:600;
+  }
+  .popup .plinks a:hover{text-decoration:underline}
+  .popup .geo{
+    font-family:"IBM Plex Mono",ui-monospace,monospace;font-size:9.5px;
+    color:var(--faint);margin-top:6px;
+  }
 
   /* ---------- feed ---------- */
   .rail{display:flex;flex-direction:column;gap:22px}
@@ -480,25 +501,25 @@
     return best;
   }
   const PLACES = [
-    {name:"Glacier origin", x:470, y:84, kind:"origin", k:"Source of the flood",
+    {name:"Glacier origin", x:470, y:84, kind:"origin", k:"Source of the flood", ll:[28.40,85.40], z:11, approx:true,
      info:"An earthquake-triggered ice-rock avalanche ~600 m wide fell ~1,200 m from a glacier here, damming the Lhende Khola before it burst."},
-    {name:"Rasuwagadhi", x:474, y:306, kind:"town", k:"Border crossing destroyed",
+    {name:"Rasuwagadhi", x:474, y:306, kind:"town", k:"Border crossing destroyed", ll:[28.2780,85.3780], z:14,
      info:"Nepal–China border point and dry port. The customs office was destroyed 7 minutes after the quake. The 111 MW Rasuwagadhi hydropower plant was damaged; 8 South Korean workers missing."},
-    {name:"Timure", x:471, y:338, kind:"town", k:"Village swept away",
+    {name:"Timure", x:471, y:338, kind:"town", k:"Village swept away", ll:[28.2630,85.3770], z:14,
      info:"Border village overwhelmed by the surge. Nine Armed Police Force personnel stationed here are among the missing."},
-    {name:"Syaphrubesi", x:450, y:450, kind:"town", k:"Trekking gateway hit",
+    {name:"Syaphrubesi", x:450, y:450, kind:"town", k:"Trekking gateway hit", ll:[28.1600,85.3350], z:14,
      info:"Main gateway to Langtang National Park, busy with tourists in late August. Hundreds of trekkers were in the valley; 403 tourists are unaccounted for across the region."},
-    {name:"Mailung", x:428, y:556, kind:"town", k:"Hydro corridor",
+    {name:"Mailung", x:428, y:556, kind:"town", k:"Hydro corridor", ll:[28.0500,85.1800], z:13, approx:true,
      info:"Settlement in the steep Trishuli gorge near the 60 MW Trishuli 3A project, one of six damaged power facilities."},
-    {name:"Betrawati", x:412, y:664, kind:"town", k:"Bridge town",
+    {name:"Betrawati", x:412, y:664, kind:"town", k:"Bridge town", ll:[27.9720,85.1800], z:14,
      info:"Rasuwa–Nuwakot boundary town. High water severed road links; the Trishuli 3B hub 220 kV substation nearby was knocked out."},
-    {name:"Trishuli Bazaar", x:392, y:736, kind:"town", k:"Bridge swept away",
+    {name:"Trishuli Bazaar", x:392, y:736, kind:"town", k:"Bridge swept away", ll:[27.9230,85.1470], z:14,
      info:"District bazaar of Nuwakot. A bridge connecting the town was swept away; the historic Trishuli and Devighat power stations downstream were both damaged. 11 dead in Nuwakot."},
-    {name:"Galchhi / Dhading", x:326, y:856, kind:"town", k:"18 dead in Dhading",
+    {name:"Galchhi / Dhading", x:326, y:856, kind:"town", k:"18 dead in Dhading", ll:[27.8330,84.9990], z:13,
      info:"The swollen Trishuli runs along the Prithvi Highway corridor here. Dhading district reported 18 deaths as the wave passed through late morning."},
-    {name:"Devghat", x:168, y:1006, kind:"town", k:"Rivers converge",
+    {name:"Devghat", x:168, y:1006, kind:"town", k:"Rivers converge", ll:[27.7120,84.4150], z:13,
      info:"Confluence where the Trishuli meets the Kali Gandaki to form the Narayani. The flood crest arrived in the afternoon, spreading into the plains."},
-    {name:"Narayanghat / Chitwan", x:174, y:1088, kind:"town", k:"28 dead in Chitwan",
+    {name:"Narayanghat / Chitwan", x:174, y:1088, kind:"town", k:"28 dead in Chitwan", ll:[27.6970,84.4280], z:13,
      info:"Chitwan recorded the highest district toll — 28 dead — as the Narayani burst across low-lying settlements. Downstream, the river becomes India's Gandak."}
   ];
   PLACES.forEach(p => p.t = p.kind==="origin" ? 0 : tNear(p.x,p.y));
@@ -540,18 +561,34 @@
     g.appendChild(halo); g.appendChild(c); g.appendChild(t);
     markersG.appendChild(g);
     const show = ()=>{
-      popup.innerHTML = '<span class="k">'+p.k+'</span><b>'+p.name+'</b><p>'+p.info+'</p>';
+      const q = p.ll[0].toFixed(4)+","+p.ll[1].toFixed(4);
+      const newsQ = encodeURIComponent('"'+p.name.split(" /")[0]+'" Nepal flood');
+      popup.innerHTML =
+        '<button class="pclose" aria-label="Close">×</button>' +
+        '<span class="k">'+p.k+'</span><b>'+p.name+'</b><p>'+p.info+'</p>' +
+        '<iframe loading="lazy" title="Satellite view of '+p.name+'" referrerpolicy="no-referrer-when-downgrade" ' +
+        'src="https://maps.google.com/maps?q='+q+'&z='+(p.z||13)+'&t=k&output=embed"></iframe>' +
+        '<div class="geo">'+q+(p.approx?" · approx. location":"")+'</div>' +
+        '<div class="plinks">' +
+        '<a target="_blank" rel="noopener" href="https://news.google.com/search?q='+newsQ+'">News coverage ↗</a>' +
+        '<a target="_blank" rel="noopener" href="https://www.google.com/maps/place/'+q+'">Open map ↗</a>' +
+        '</div>';
       const bx = mapBox.getBoundingClientRect();
+      const pw = Math.min(300, bx.width-48), ph = 330;
       let px = p.x/820*bx.width, py = p.y/1100*bx.height;
-      px = Math.min(Math.max(px+14, 8), bx.width-238);
-      py = Math.min(Math.max(py-30, 8), bx.height-150);
+      px = Math.min(Math.max(px+14, 8), bx.width-pw-10);
+      py = Math.min(Math.max(py-40, 8), Math.max(bx.height-ph, 8));
       popup.style.left = px+"px"; popup.style.top = py+"px";
       popup.classList.add("show");
+      popup.querySelector(".pclose").addEventListener("click", ev=>{
+        ev.stopPropagation(); popup.classList.remove("show");
+      });
     };
     g.addEventListener("click", e=>{e.stopPropagation(); show();});
     g.addEventListener("keydown", e=>{ if(e.key==="Enter"||e.key===" "){e.preventDefault(); show();}});
   });
   mapBox.addEventListener("click", ()=>popup.classList.remove("show"));
+  popup.addEventListener("click", e=>e.stopPropagation());
 
   /* ---------- origin burst ---------- */
   const originG = $("origin");

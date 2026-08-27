@@ -866,7 +866,7 @@
     const b = document.createElement("button");
     b.className = "vid";
     b.setAttribute("aria-label","Play video: "+v.t+" ("+v.ch+")");
-    b.innerHTML = '<img loading="lazy" alt="" src="'+thumbUrl(v.id)+'">' +
+    b.innerHTML = '<img alt="" src="'+thumbUrl(v.id)+'">' +
       '<span class="pb"><span>▶</span></span>' +
       '<span class="vt"><b>'+v.ch+'</b>'+v.t+'</span>';
     b.addEventListener("click", ()=>{
